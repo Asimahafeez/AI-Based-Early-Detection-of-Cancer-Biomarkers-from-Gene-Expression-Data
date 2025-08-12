@@ -1,37 +1,57 @@
 import streamlit as st
 import pandas as pd
+import joblib
 import matplotlib.pyplot as plt
-import seaborn as sns
-from utils import load_model, preprocess_data
+import numpy as np
 
-st.set_page_config(page_title="AI Cancer Biomarker Detector", layout="wide")
+MODEL_PATH = "cancer_model.pkl"
 
-st.title("🧬 AI-Based Early Detection of Cancer Biomarkers")
-st.write("Upload your gene expression dataset to detect potential cancer biomarkers.")
+@st.cache_resource
+def load_model():
+    return joblib.load(MODEL_PATH)
 
 model = load_model()
 
-uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
-    st.subheader("📊 Uploaded Data Preview")
-    st.dataframe(df.head())
+st.set_page_config(
+    page_title="AI-Based Early Cancer Biomarker Detector",
+    page_icon="🧬",
+    layout="wide"
+)
 
-    processed = preprocess_data(df)
-    predictions = model.predict(processed)
-    probs = model.predict_proba(processed)[:, 1]
+st.title("🧬 AI-Based Early Cancer Biomarker Detector")
+st.write("""
+This tool uses **gene expression data** and a trained Machine Learning model  
+to predict the likelihood of **cancer presence** based on biomarkers.  
+Upload your CSV file or enter values manually to test the model.
+""")
 
-    result_df = df.copy()
-    result_df["Cancer_Prediction"] = predictions
-    result_df["Cancer_Probability"] = probs
+# Upload CSV
+uploaded_file = st.file_uploader("📤 Upload Gene Expression CSV", type=["csv"])
 
-    st.subheader("🧾 Prediction Results")
-    st.dataframe(result_df)
+if uploaded_file:
+    data = pd.read_csv(uploaded_file)
+    st.write("### Uploaded Data Preview")
+    st.dataframe(data.head())
+
+    preds = model.predict(data)
+    data['Prediction'] = np.where(preds == 1, "Cancer", "Normal")
+
+    st.write("### Predictions")
+    st.dataframe(data)
 
     fig, ax = plt.subplots()
-    sns.histplot(probs, bins=10, kde=True, ax=ax, color="red")
-    ax.set_title("Cancer Probability Distribution")
+    data['Prediction'].value_counts().plot(kind='bar', color=['green', 'red'], ax=ax)
+    plt.title("Prediction Distribution")
     st.pyplot(fig)
-else:
-    st.info("Please upload a CSV file to proceed.")
 
+# Manual Input
+st.write("### Or Enter Gene Expression Values Manually")
+gene1 = st.number_input("Gene1 Expression", min_value=0.0, step=0.1)
+gene2 = st.number_input("Gene2 Expression", min_value=0.0, step=0.1)
+gene3 = st.number_input("Gene3 Expression", min_value=0.0, step=0.1)
+
+if st.button("Predict from Manual Input"):
+    input_df = pd.DataFrame([[gene1, gene2, gene3]], columns=['Gene1', 'Gene2', 'Gene3'])
+    pred = model.predict(input_df)[0]
+    result = "Cancer" if pred == 1 else "Normal"
+    st.success(f"Prediction: **{result}**")
