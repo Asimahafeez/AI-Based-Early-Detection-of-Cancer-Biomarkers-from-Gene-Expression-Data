@@ -12,3 +12,4 @@ A Streamlit app for early detection of cancer biomarkers from gene expression da
 1. Push code to GitHub
 2. Go to [Streamlit Cloud](https://share.streamlit.io/)
 3. Deploy using repo link
+4. Stream lit deployed link ; https://detection-of-cancer-biomarkers-from-gene-expression-data-1.streamlit.app/
